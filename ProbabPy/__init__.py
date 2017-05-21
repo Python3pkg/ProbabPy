@@ -1,4 +1,4 @@
-from __future__ import division, print_function
+
 from CompyledFunc import CompyledFunc
 from copy import deepcopy
 from frozendict import frozendict
@@ -63,7 +63,7 @@ class PDF(MathFunc):
         scope = deepcopy(self.Scope)   # just to be careful
         param = self.Param.copy()
         syms_and_values = {}
-        for var, value in var_and_param_names_and_values.items():
+        for var, value in list(var_and_param_names_and_values.items()):
             if var in self.Vars:
                 if var in cond:
                     cond[var] = value
@@ -86,7 +86,7 @@ class PDF(MathFunc):
             neg_log_p = {}
             s = set(var_and_param_names_and_values)
             s_items = set(var_and_param_names_and_values.items())
-            for var_values___frozen_dict, mapping_value in param['NegLogP'].items():
+            for var_values___frozen_dict, mapping_value in list(param['NegLogP'].items()):
                 other_items___dict = dict(set(var_values___frozen_dict.items()) - s_items)
                 if not (set(other_items___dict) & s):
                     neg_log_p[frozendict(set(var_values___frozen_dict.items()) - set(cond.items()))] =\
@@ -170,7 +170,7 @@ class PDF(MathFunc):
 def p_from_neg_log_p(expr_or_dict):
     if hasattr(expr_or_dict, 'keys'):
         probs___math_dict = MathDict()
-        for k, v in expr_or_dict.items():
+        for k, v in list(expr_or_dict.items()):
             probs___math_dict[k] = exp(-v)
         return probs___math_dict
     else:
@@ -195,13 +195,13 @@ def product_of_2_PDFs(pdf0, pdf1):
 
 class DiscreteFinitePMF(PDF):
     def __init__(self, var_names_and_syms={}, p_or_neg_log_p={}, p=True, cond={}, scope={}):
-        non_none_scope = {var: value for var, value in scope.items() if value is not None}
+        non_none_scope = {var: value for var, value in list(scope.items()) if value is not None}
         if p:
             f = lambda x: -log(x)
         else:
             f = lambda x: x
         p_or_neg_log_p = MathDict({var_values___frozen_dict: f(func_value)
-                                   for var_values___frozen_dict, func_value in p_or_neg_log_p.items()
+                                   for var_values___frozen_dict, func_value in list(p_or_neg_log_p.items())
                                    if set(var_values___frozen_dict.items()) >= set(non_none_scope.items())})
         PDF.__init__(self, family='DiscreteFinite', var_names_and_syms=var_names_and_syms,
                      param=dict(NegLogP=p_or_neg_log_p), cond=cond, scope=non_none_scope,
@@ -219,12 +219,12 @@ class DiscreteFinitePMF(PDF):
 
 def discrete_finite_neg_log_mass(pmf, var_names_and_values={}):
     v = var_names_and_values.copy()
-    for var, value in var_names_and_values.items():
+    for var, value in list(var_names_and_values.items()):
         if (value is None) or is_non_atomic_sympy_expr(value):
             del v[var]
     s0 = set(v.items())
     d = MathDict(())
-    for var_names_and_values___frozen_dict, func_value in pmf.Param['NegLogP'].items():
+    for var_names_and_values___frozen_dict, func_value in list(pmf.Param['NegLogP'].items()):
         spare_var_values = dict(s0 - set(var_names_and_values___frozen_dict.items()))
         s = set(spare_var_values.keys())
         if not(s) or (s and not(s & set(var_names_and_values___frozen_dict))):
@@ -237,7 +237,7 @@ def discrete_finite_norm(pmf):
     pmf.Param['NegLogP'] = pmf.Param['NegLogP'].copy()
     neg_log_p = pmf.Param['NegLogP']
     condition_sums = {}
-    for var_values___frozen_dict, function_value in neg_log_p.items():
+    for var_values___frozen_dict, function_value in list(neg_log_p.items()):
         condition_instance = pmf.CondInstances[var_values___frozen_dict]
         if condition_instance in condition_sums:
             condition_sums[condition_instance] += exp(-function_value)
@@ -262,14 +262,14 @@ def discrete_finite_max(pmf, leave_unoptimized=None):
     else:
         comparison_bases = pmf.CondInstances
     neg_log_mins = {}
-    for var_names_and_values___frozen_dict, func_value in neg_log_p.items():
+    for var_names_and_values___frozen_dict, func_value in list(neg_log_p.items()):
         comparison_basis = comparison_bases[var_names_and_values___frozen_dict]
         if comparison_basis in neg_log_mins:
             neg_log_mins[comparison_basis] = min(neg_log_mins[comparison_basis], func_value)
         else:
             neg_log_mins[comparison_basis] = func_value
     optims = {}
-    for var_names_and_values___frozen_dict, func_value in neg_log_p.items():
+    for var_names_and_values___frozen_dict, func_value in list(neg_log_p.items()):
         if func_value <= neg_log_mins[comparison_bases[var_names_and_values___frozen_dict]]:
             optims[var_names_and_values___frozen_dict] = func_value
     return DiscreteFinitePMF(var_names_and_syms=pmf.Vars.copy(), p_or_neg_log_p=optims, p=False,
@@ -282,14 +282,14 @@ def discrete_finite_marg(pmf, *marginalized_vars):
     for marginalized_var in marginalized_vars:
         del var_symbols[marginalized_var]
         d = {}
-        for var_values___frozen_dict, mapping_value in mappings.items():
+        for var_values___frozen_dict, mapping_value in list(mappings.items()):
             marginalized_var_value = var_values___frozen_dict[marginalized_var]
             fd = frozendict(set(var_values___frozen_dict.items()) - {(marginalized_var, marginalized_var_value)})
             if fd in d:
                 d[fd] += exp(-mapping_value)
             else:
                 d[fd] = exp(-mapping_value)
-        mappings = {k: -log(v) for k, v in d.items()}
+        mappings = {k: -log(v) for k, v in list(d.items())}
     return DiscreteFinitePMF(var_symbols, mappings,
                              cond=deepcopy(pmf.Cond),
                              scope=deepcopy(pmf.Scope), p=False)
@@ -300,7 +300,7 @@ def discrete_finite_cond(pmf, cond={}, **kw_cond):
     mappings = pmf.Param['NegLogP'].copy()
     d = {}
     s0 = set(cond.items())
-    for var_values___frozen_dict, mapping_value in mappings.items():
+    for var_values___frozen_dict, mapping_value in list(mappings.items()):
         s = set(var_values___frozen_dict.items())
         if s >= s0:
             d[frozendict(s - s0)] = mapping_value
@@ -421,7 +421,7 @@ def gauss_neg_log_dens(pdf, var_and_param_names_and_values={}, **kw_var_and_para
 
 def gauss_max(pdf):
     pdf = pdf.copy()
-    for var, value in pdf.Scope.items():
+    for var, value in list(pdf.Scope.items()):
         if value is None:
             pdf.Scope[var] = pdf.Param[('Mean', var)]
     return pdf
@@ -452,7 +452,7 @@ def gauss_cond(pdf, cond={}, **kw_cond):
     for var in cond:
         del scope[var]
     point_cond = {}
-    for var, value in cond.items():
+    for var, value in list(cond.items()):
         if value is not None:
             point_cond[pdf.Vars[var]] = value
     cond_vars = tuple(cond)
@@ -488,7 +488,7 @@ def gauss_cond(pdf, cond={}, **kw_cond):
     S_s = BlockMatrix(S_s)
 
     S_cs = [num_scope_vars * [None] for _ in range(num_cond_vars)]   # careful not to create same mutable object
-    for i, j in product(range(num_cond_vars), range(num_scope_vars)):
+    for i, j in product(list(range(num_cond_vars)), list(range(num_scope_vars))):
         if ('Cov', cond_vars[i], scope_vars[j]) in pdf.Param:
             S_cs[i][j] = pdf.Param[('Cov', cond_vars[i], scope_vars[j])]
         else:
@@ -564,7 +564,7 @@ def product_of_2_DiscreteFinitePMFs(pmf0, pmf1):
     neg_log_p0 = pmf0.Param['NegLogP'].copy()
     neg_log_p1 = pmf1.Param['NegLogP'].copy()
     neg_log_p = {}
-    for item_0, item_1 in product(neg_log_p0.items(), neg_log_p1.items()):
+    for item_0, item_1 in product(list(neg_log_p0.items()), list(neg_log_p1.items())):
         var_names_and_values_0___frozen_dict, func_value_0 = item_0
         var_names_and_values_1___frozen_dict, func_value_1 = item_1
         same_vars_same_values = True
@@ -586,7 +586,7 @@ def product_of_DiscreteFinitePMF_and_continuousPDF(pmf, pdf):
         del cond[var]
     var_names_and_symbols = merge_dicts_ignoring_dup_keys_and_none_values(pmf.Vars, pdf.Vars)
     neg_log_p = {}
-    for var_names_and_values___frozen_dict, func_value in pmf.Param['NegLogP'].items():
+    for var_names_and_values___frozen_dict, func_value in list(pmf.Param['NegLogP'].items()):
         neg_log_p[var_names_and_values___frozen_dict] = func_value - log(pdf.Mapping)
     return DiscreteFinitePMF(var_names_and_syms=var_names_and_symbols, p_or_neg_log_p=neg_log_p, p=False,
                              cond=cond, scope=scope)
